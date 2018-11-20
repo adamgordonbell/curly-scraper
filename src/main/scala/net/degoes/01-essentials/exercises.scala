@@ -2,13 +2,8 @@
 
 package net.degoes.essentials
 
+import java.io.File
 import java.util.Date
-
-import com.sun.org.glassfish.external.statistics.Stats
-import net.degoes.essentials.types.Point
-import scalaz.Alpha.A
-import shapeless.PolyDefns.->
-import shapeless.the
 
 import scala.util.Try
 
@@ -69,7 +64,12 @@ object types {
   //
   // List all values of the type `Either[Either[Unit, Unit], Unit]`.
   //
-  val EitherEitherUnitUnitUnitValues: Set[Either[Either[Unit, Unit], Unit]] = ???
+  val EitherEitherUnitUnitUnitValues: Set[Either[Either[Unit, Unit], Unit]] = Set(
+    Right(Right(())),
+    Right(Left(())),
+    Left(Right(())),
+    Left(Left(()))
+  )
 
   //Make illegal states unrepresentable
   // |A| = n
@@ -314,12 +314,14 @@ object functions {
   def arrayUpdate1[A](arr: Array[A], i: Int, f: A => A): Unit =
     arr.update(i, f(arr(i)))
 //
-//  def arrayUpdate2[A](arr: Array[A], i: Int, f: A => A): Option[Array[A]] =
-//    if (i < 0 || i >= arr.length) {
-//      None
-//    } else {
-//      Some(arr.updated(i, f(arr(i))).toArray)
-//    }
+  def arrayUpdate2[A](arr: Array[A], i: Int, f: A => A): Option[Array[A]] =
+    if (i < 0 || i >= arr.length) {
+      None
+    } else {
+      arr.clone()
+      arr.update(i, f(arr(i)))
+      Some(arr)
+    }
 
   //
   // EXERCISE 3
@@ -358,7 +360,7 @@ object functions {
 
   def afterOneHour1: LocalDateTime = LocalDateTime.now.plusHours(1)
 
-  def afterOneHour2(currentTime: LocalDateTime): LocalDateTime = ???
+  def afterOneHour2(currentTime: LocalDateTime): LocalDateTime = currentTime.plusHours(1)
 
   //
   // EXERCISE 6
@@ -648,7 +650,10 @@ object higher_order {
   // Implement the following higher-order function.
   //
   def choice[A, B, C, D](f: A => B, g: C => D): Either[A, C] => Either[B, D] =
-    ???
+    param => param match {
+      case Right(r) => Right(g(r))
+      case Left(l) => Left(f(l))
+    }
 
   //
   // EXERCISE 5
@@ -656,7 +661,7 @@ object higher_order {
   // Implement the following higer-order function.
   //
   def compose[A, B, C](f: B => C, g: A => B): A => C =
-    ???
+    x => f(g(x))
 
   //
   // EXERCISE 6
@@ -708,7 +713,7 @@ object poly_functions {
   // `snd` that returns the second element out of any pair of `A` and `B`.
   //
   object snd {
-    def apply[A, B](t: (A, B)): B = ???
+    def apply[A, B](t: (A, B)): B = t._2
   }
   snd((1, "foo")) // "foo"
   snd((true, List(1, 2, 3))) // List(1, 2, 3)
@@ -787,7 +792,7 @@ object poly_functions {
       by: A => B)(
       reducer: (B, List[A]) => C):
     Map[B, C] = {
-      l.groupBy(by).map( t => (t._1, reducer(t._1,t._2)))
+      l.groupBy(by).map(t => (t._1, reducer(t._1,t._2)))
     }
 }
 
@@ -926,7 +931,16 @@ object higher_kinded {
       bind(fa)(f andThen single)
     }
   }
-  val ListCollectionLike: CollectionLike[List] = ???
+  val ListCollectionLike: CollectionLike[List] = new CollectionLike[List] {
+    override def empty[A]: List[A] = List.empty
+
+    override def cons[A](a: A, as: List[A]): List[A] = a :: as
+
+    override def uncons[A](as: List[A]): Option[(A, List[A])] = as match {
+      case a :: as => Option((a, as))
+      case _ => None
+    }
+  }
 
   //
   // EXERCISE 8
@@ -937,7 +951,9 @@ object higher_kinded {
     // This method will return the number of `A`s inside `fa`.
     def size[A](fa: F[A]): Int
   }
-  val ListSized: Sized[List] = ???
+  val ListSized: Sized[List] = new Sized[List] {
+    override def size[A](fa: List[A]): Int = fa.length
+  }
 
   // ? is the underscore at the type level
   //
@@ -947,8 +963,9 @@ object higher_kinded {
   // parameter to `String`.
   //
 
-  val MapStringSized: Sized[Map[String, ?]] =
-    ???
+  val MapStringSized: Sized[Map[String, ?]] = new Sized[Map[String,?]] {
+    override def size[A](fa: Map[String, A]): Int = fa.seq.toList.length
+  }
 
   //
   // EXERCISE 10
@@ -956,15 +973,16 @@ object higher_kinded {
   // Implement `Sized` for `Map`, partially applied with its first type
   // parameter to a user-defined type parameter.
   //
-  def MapSized2[K]: Sized[Map[K, ?]] =
-    ???
+  def MapSized2[K]: Sized[Map[K, ?]] = new Sized[Map[K,?]] {
+    override def size[A](fa: Map[K, A]): Int = fa.seq.toList.length
+  }
 
   //
   // EXERCISE 11
   //
   // Implement `Sized` for `Tuple3`.
   //
-  def Tuple3Sized[C, B]: ?? = ???
+//  def Tuple3Sized[C, B]: Sized[Tuple3[?,?,?]] = new Sized[Tuple3[A, C,B]] {}
 }
 
 object tc_motivating {
@@ -1006,8 +1024,31 @@ object tc_motivating {
 
   A type class instance is an instance of a type class for a given
   set of types.
-
   */
+
+  object hashmap {
+    //- means input - contravariant
+    //+ means output -
+    trait Eq[A] {
+      def eq(l : A, r: A) : Boolean
+    }
+    trait Hash[A] extends Eq[A]{
+      def hash(a : A) : Int
+    }
+
+    object Hash {
+      implicit val HashInt : Hash[Int] =
+        new Hash[Int] {
+          override def hash(a: Int): Int = ???
+
+          override def eq(l: Int, r: Int): Boolean = ???
+        }
+    }
+
+    class HashMap[K,V] {
+        def insert(k : K, v : V): HashMap[K,V] = ???
+      }
+  }
   /**
    * All implementations are required to satisfy the transitivityLaw.
    *
@@ -1192,7 +1233,13 @@ object typeclasses {
 
       sort1(lessThan) ++ List(x) ++ sort1(notLessThan)
   }
-  def sort2[A: Ord](l: List[A]): List[A] = ???
+  def sort2[A: Ord](l: List[A]): List[A] = l match {
+    case Nil => Nil
+    case x :: xs =>
+      val (lessThan, notLessThan) = xs.partition(_ < x)
+
+      sort2(lessThan) ++ List(x) ++ sort2(notLessThan)
+  }
 
   //
   // EXERCISE 2
@@ -1210,7 +1257,8 @@ object typeclasses {
   object PathLike {
     def apply[A](implicit A: PathLike[A]): PathLike[A] = A
   }
-  sealed trait MyPath
+  case class MyPath(name : String, children : List[MyPath])
+
   implicit val MyPathPathLike: PathLike[MyPath] =
     new PathLike[MyPath] {
       def child(parent: MyPath, name: String): MyPath = ???
@@ -1223,7 +1271,13 @@ object typeclasses {
   //
   // Create an instance of the `PathLike` type class for `java.io.File`.
   //
-  implicit val FilePathLike: PathLike[java.io.File] = ???
+  implicit val FilePathLike: PathLike[java.io.File] = new PathLike[java.io.File] {
+    override def child(parent: File, name: String): File = parent.list().filter(_ == name).headOption.map(x => new File(x)).getOrElse(new File(""))
+
+    override def parent(node: File): Option[File] = Option(node.getParentFile)
+
+    override def root: File = new File("/")
+  }
 
   //
   // EXERCISE 4
@@ -1231,10 +1285,10 @@ object typeclasses {
   // Create two laws for the `PathLike` type class.
   //
   trait PathLikeLaws[A] extends PathLike[A] {
-    def law1: Boolean = ???
+    def law1: Boolean = parent(root) == None
 
     def law2(node: A, name: String, assertEquals: (A, A) => Boolean): Boolean =
-      ???
+      parent(child(node,name)).fold(false)(assertEquals(node,_))
   }
 
   //
@@ -1244,9 +1298,9 @@ object typeclasses {
   // into the given named node.
   //
   implicit class PathLikeSyntax[A](a: A) {
-    def / (name: String)(implicit A: PathLike[A]): A = ???
+    def / (name: String)(implicit A: PathLike[A]): A = A.child(a,name)
 
-    def parent(implicit A: PathLike[A]): Option[A] = ???
+    def parent(implicit A: PathLike[A]): Option[A] = A.parent(a)
   }
   def root[A: PathLike]: A = PathLike[A].root
   //  root[MyPath] / "foo" / "bar" / "baz" // MyPath
@@ -1263,7 +1317,9 @@ object typeclasses {
   object Filterable {
     def apply[F[_]](implicit F: Filterable[F]): Filterable[F] = F
   }
-  implicit val FilterableList: Filterable[List] = ???
+  implicit val FilterableList: Filterable[List] = new Filterable[List] {
+    override def filter[A](fa: List[A], f: A => Boolean): List[A] = fa.filter(f)
+  }
 
   //
   // EXERCISE 7
@@ -1272,7 +1328,7 @@ object typeclasses {
   // type for which there exists a `Filterable` instance.
   //
   implicit class FilterableSyntax[F[_], A](fa: F[A]) {
-    ???
+//    def filterWith(f : A => Boolean)(implicit A: Filterable[A]) = A.filter(fa, f)
   }
   // List(1, 2, 3).filterWith(_ == 2)
 
@@ -1316,3 +1372,9 @@ object typeclasses {
   def empty[F[_]: Collection, A]: F[A] = Collection[F].empty[A]
   // List(1, 2, 3).uncons // Some((1, List(2, 3)))
 }
+
+//fp game
+// write the result first, and then insert holes
+// use functions to move us from inputs to end state
+
+//comparable in java is basically a typeclass
