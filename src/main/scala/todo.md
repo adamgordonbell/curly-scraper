@@ -65,3 +65,15 @@ Oli @Oli_kitty_twitter 09:54
 https://www.scala-exercises.org/fp_in_scala/getting_started_with_functional_programming Exercises from the Red book
 
 https://typelevel.org/cats/nomenclature.html
+
+
+* ref uses compare and set
+  * wouldn't it be more performant to have it on it's own fiber and have a mailbox
+  * sort of an actor approach
+* use zio and queus to aggregate data from several kafka sources into one kafka message
+  
+  
+  put - str - line
+  
+  
+  
