@@ -20,6 +20,9 @@ lazy val functionalScala = (project in file(".")).
 scalaVersion := "2.12.6"
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6")
+addCompilerPlugin(
+  "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full
+)
 
 scalacOptions ++= Seq(
   "-deprecation"
@@ -52,8 +55,18 @@ libraryDependencies ++= Seq(
   // URL parsing
   "io.lemonlabs"    %% "scala-uri"          % "1.3.1",
   // Ammonite
-  "com.lihaoyi"     %  "ammonite"           % "1.1.2"   % "test" cross CrossVersion.full
+  "com.lihaoyi"     %  "ammonite"           % "1.1.2"   % "test" cross CrossVersion.full,
+   "com.github.alexandrnikitin" %% "bloom-filter" % "latest.release"
 )
+
+
+val circeVersion = "0.10.0"
+
+libraryDependencies ++= Seq(
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser"
+).map(_ % circeVersion)
 
 resolvers ++= Seq(
   "Typesafe Snapshots"          at "http://repo.typesafe.com/typesafe/snapshots/",
