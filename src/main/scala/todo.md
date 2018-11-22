@@ -6,14 +6,15 @@
 * jdegoes -> pick something in cats / scalaz that looks sufficently scary and then try to understand it
   * start by trying to undersnad the type constructor, draw a pick for yourself, look at the laws
 * try running interpreter
-
+* build 
+* unfold web parser
 
 * tail recursive fix
 to turn a recursive function to tail recursive, pass all your stack as parameters
 
 Ideas:
 * reattend future one remotely?
-* 
+* contact john for something to contribute to the zio project
 
 
 -----
