@@ -4,8 +4,8 @@ import scalaz.Monoid
 import scalaz.zio.{App, ExitResult, IO, Promise}
 import scalaz._
 import Scalaz.{mzero, _}
+import net.degoes.scraper.url.URL
 import scalaz.zio.console._
-import net.degoes.scraper.scraper.URL
 
 object test extends App {
   val Home = URL("http://scalaz.org").get
@@ -28,8 +28,6 @@ object test extends App {
         .fold[IO[Exception, String]](
           IO.fail(new Exception("Could not connect to: " + url)))(IO.now(_))
 
-  val ScalazRouter: URL => Set[URL] =
-    url => if (url.parsed.apexDomain == Some("scalaz.org")) Set(url) else Set()
 
   val Processor: (URL, String) => IO[Unit, List[(URL, String)]] =
     (url, html) => IO.now(List(url -> html))
@@ -38,13 +36,13 @@ object test extends App {
     (for {
       _ <- putStrLn("Starting")
       rs <- scraper.crawlIOPar(
-        Set(Home,ScaladocIndex,Index, About),
-        ScalazRouter,
+        Set(Home),
+        models.stayInSeedDomainRouter(Set(Home)),
         Processor,
         getURL
         )
       print = rs.value.map(_._1).mkString("\n")
-      _ <- putStrLn(s"results : $print")
+      _ <- putStrLn(s"results : \n$print")
     } yield
       ()).redeemPure(
       _ => ExitStatus.ExitNow(1),

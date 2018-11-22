@@ -4,6 +4,8 @@ import scalaz.Monoid
 import scalaz.zio._
 import scalaz._
 import Scalaz.{mzero, _}
+import net.degoes.scraper.url.URL
+import net.degoes.scraper.url._
 
 object scraper {
 
@@ -41,6 +43,8 @@ object scraper {
   def leftMap[E2](f: E => E2): Crawl[E2, A] = Crawl(f(error), value)
   def map[A2](f: A => A2): Crawl[E, A2] = Crawl(error, f(value))
  }
+
+ //maybe this can be derived somehow, since it is the monoid for all products?
  object Crawl {
   implicit def CrawlMonoid[E: Monoid, A: Monoid]: Monoid[Crawl[E, A]] =
    new Monoid[Crawl[E, A]]{
@@ -48,71 +52,5 @@ object scraper {
     def append(l: Crawl[E, A], r: => Crawl[E, A]): Crawl[E, A] =
      Crawl(l.error |+| r.error, l.value |+| r.value)
    }
- }
-
- final case class URL private (parsed: io.lemonlabs.uri.Url) {
-  import io.lemonlabs.uri._
-
-  final def relative(page: String): Option[URL] =
-   scala.util.Try(parsed.path match {
-    case Path(parts) =>
-     val whole = parts.dropRight(1) :+ page.dropWhile(_ == '/')
-
-     parsed.withPath(UrlPath(whole))
-   }).toOption.map(new URL(_))
-
-  def url: String = parsed.toString
-
-  override def equals(a: Any): Boolean = a match {
-   case that : URL => this.url == that.url
-   case _ => false
-  }
-
-  override def hashCode: Int = url.hashCode
- }
-
- object URL {
-  import io.lemonlabs.uri._
-
-  def apply(url: String): Option[URL] =
-   scala.util.Try(AbsoluteUrl.parse(url)).toOption match {
-    case None => None
-    case Some(parsed) => Some(new URL(parsed))
-   }
- }
-
- private val blockingPool = java.util.concurrent.Executors.newCachedThreadPool()
-
- def getURL(url: URL): IO[Exception, String] =
-  for {
-   //eventually this would be IO.blocking
-   promise <-  Promise.make[Exception, String]
-   _       <-  (for {
-    exitResult <- IO.async[Nothing, ExitResult[Exception, String]](k => blockingPool.submit(
-     new Runnable () {
-      def run: Unit =
-       try {
-        k(ExitResult.Completed(ExitResult.Completed(scala.io.Source.fromURL(url.url)(scala.io.Codec.UTF8).mkString)))
-       } catch {
-        case e : Exception => k(ExitResult.Completed(ExitResult.Failed(e)))
-       }
-     }
-    )) : IO[Nothing, ExitResult[Exception, String]]
-    _          <- promise.done(exitResult)
-   } yield ()).fork
-   html    <-  promise.get
-  } yield html
-
- def extractURLs(root: URL, html: String): List[URL] = {
-  val pattern = "href=[\"\']([^\"\']+)[\"\']".r
-
-  scala.util.Try({
-   val matches = (for (m <- pattern.findAllMatchIn(html)) yield m.group(1)).toList
-
-   for {
-    m   <- matches
-    url <- URL(m).toList ++ root.relative(m).toList
-   } yield url
-  }).getOrElse(Nil)
  }
 }
