@@ -13,7 +13,7 @@ object scraper {
   seeds     : Set[URL],
   router    : URL => Set[URL],
   processor : (URL, String) => IO[E, A],
-  getURL    : URL => IO[Exception, String] = getURL(_)
+  getURL    : URL => IO[Exception, String] = models.getURL(_)
  ): IO[Nothing, Crawl[E, A]] = {
   def loop(seeds: Set[URL], ref: Ref[(Crawl[E, A], Set[URL])]): IO[Nothing, Unit] =
    IO.parTraverse(seeds)(url =>

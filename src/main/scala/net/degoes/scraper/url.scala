@@ -1,8 +1,12 @@
 package net.degoes.scraper
 
+import org.apache.commons.codec.binary.Hex
+import org.apache.commons.codec.digest.DigestUtils
 import scalaz.Scalaz.{mzero, _}
 import scalaz.{Monoid, _}
 import scalaz.zio._
+
+import scala.util.Try
 
 object url {
 
@@ -24,6 +28,8 @@ object url {
 
   def url: String = parsed.toString
 
+  val digest : SHA256Hash = SHA256Hash.create(parsed.toString())
+
   override def equals(a: Any): Boolean = a match {
    case that : URL => this.url == that.url
    case _ => false
@@ -42,28 +48,6 @@ object url {
    }
  }
 
- private val blockingPool = java.util.concurrent.Executors.newCachedThreadPool()
-
- def getURL(url: URL): IO[Exception, String] =
-  for {
-   //eventually this would be IO.blocking
-   promise <-  Promise.make[Exception, String]
-   _       <-  (for {
-    exitResult <- IO.async[Nothing, ExitResult[Exception, String]](k => blockingPool.submit(
-     new Runnable () {
-      def run: Unit =
-       try {
-        k(ExitResult.Completed(ExitResult.Completed(scala.io.Source.fromURL(url.url)(scala.io.Codec.UTF8).mkString)))
-       } catch {
-        case e : Exception => k(ExitResult.Completed(ExitResult.Failed(e)))
-       }
-     }
-    )) : IO[Nothing, ExitResult[Exception, String]]
-    _          <- promise.done(exitResult)
-   } yield ()).fork
-   html    <-  promise.get
-  } yield html
-
  def extractURLs(root: URL, html: String): List[URL] = {
   val pattern = "href=[\"\']([^\"\']+)[\"\']".r
 
@@ -75,5 +59,38 @@ object url {
     url <- URL(m).toList ++ root.relative(m).toList
    } yield url
   }).getOrElse(Nil)
+ }
+
+
+
+ object SHA256Hash {
+  def parse(potentiallyValidHash: String): Option[SHA256Hash] = Try(new SHA256Hash(potentiallyValidHash)).toOption
+
+  def create(input : String) : SHA256Hash = new SHA256Hash(DigestUtils.sha256(input))
+  def unapply(raw: String): Option[SHA256Hash] = parse(raw)
+ }
+
+ class SHA256Hash(potentiallyValidHash: String) {
+  def this(hashAsBytes: Array[Byte]) = {
+   this(Hex.encodeHexString(hashAsBytes))
+  }
+
+  private val potentiallyValidHashNoPrefix = potentiallyValidHash.stripPrefix("sha256:")
+  lazy val asStringWithPrefix: String = "sha256:" + potentiallyValidHashNoPrefix
+
+  override def equals(other: Any): Boolean = {
+   other match {
+    case otherHash: SHA256Hash => otherHash.asStringWithPrefix == this.asStringWithPrefix
+    case _ => false
+   }
+  }
+
+  override def hashCode(): Int = {
+   this.asStringWithPrefix.hashCode //sloppy but it works
+  }
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[SHA256Hash]
+
+  override def toString: String = asStringWithPrefix
  }
 }

@@ -1,9 +1,12 @@
 package net.degoes.scraper
 
+import java.nio.file.{Path, Paths}
+
 import scalaz.Monoid
 import scalaz.zio.{App, ExitResult, IO, Promise}
 import scalaz._
 import Scalaz.{mzero, _}
+import net.degoes.scraper.test.{Home, Processor, getURL}
 import net.degoes.scraper.url.URL
 import scalaz.zio.console._
 
@@ -41,6 +44,31 @@ object test extends App {
         Processor,
         getURL
         )
+      print = rs.value.map(_._1).mkString("\n")
+      _ <- putStrLn(s"results : \n$print")
+    } yield
+      ()).redeemPure(
+      _ => ExitStatus.ExitNow(1),
+      _ => ExitStatus.ExitNow(0)
+    )
+}
+
+
+object test1 extends App {
+
+  val rootFilePath = Paths.get("/Users/abell/temp1")
+  val start = Set(
+    URL("https://scalaz.github.io/7/").get
+  )
+  def run(args: List[String]): IO[Nothing, ExitStatus] =
+    (for {
+      _ <- putStrLn("Starting")
+      rs <- scraper.crawlIOPar(
+        start,
+        models.stayInSeedDomainRouter(start),
+        models.returnAndCache(rootFilePath),
+        models.getURLCached(rootFilePath)
+      )
       print = rs.value.map(_._1).mkString("\n")
       _ <- putStrLn(s"results : \n$print")
     } yield

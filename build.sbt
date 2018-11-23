@@ -56,7 +56,10 @@ libraryDependencies ++= Seq(
   "io.lemonlabs"    %% "scala-uri"          % "1.3.1",
   // Ammonite
   "com.lihaoyi"     %  "ammonite"           % "1.1.2"   % "test" cross CrossVersion.full,
-   "com.github.alexandrnikitin" %% "bloom-filter" % "latest.release"
+
+  //bloom filter
+  "com.github.alexandrnikitin" %% "bloom-filter" % "latest.release",
+  "commons-codec" % "commons-codec" % "1.9"
 )
 
 
