@@ -2,8 +2,8 @@ import sbt._
 
 lazy val functionalScala = (project in file(".")).
   settings (
-    name          := "Functional Scala",
-    organization  := "net.degoes",
+    name          := "Scraper Scala",
+    organization  := "come.cascadeofinsights",
     version       := "0.1-SNAPSHOT",
     scalaVersion  := "2.12.6",
     initialCommands in Compile in console := """

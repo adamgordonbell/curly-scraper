@@ -1,11 +1,11 @@
-package net.degoes.scraper
+package com.cascadeofinsights.scraper
 
 import scalaz.Monoid
 import scalaz.zio._
 import scalaz._
 import Scalaz.{mzero, _}
-import net.degoes.scraper.url.URL
-import net.degoes.scraper.url._
+import url.URL
+import url._
 
 object scraper {
 

@@ -1,4 +1,4 @@
-package net.degoes.scraper
+package com.cascadeofinsights.scraper
 
 import java.io.{File, FileWriter}
 import java.nio.file.{Files, Path, Paths}
@@ -8,6 +8,8 @@ import net.degoes.scraper.url.URL
 import scalaz.zio._
 import java.nio.charset.StandardCharsets._
 import java.nio.file.{Files, Paths}
+
+import com.cascadeofinsights.scraper.url.URL
 
 import scala.util.Try
 

@@ -1,4 +1,4 @@
-package net.degoes.scraper
+package com.cascadeofinsights.scraper
 
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils

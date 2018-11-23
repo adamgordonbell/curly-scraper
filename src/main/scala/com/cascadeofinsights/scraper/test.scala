@@ -1,4 +1,4 @@
-package net.degoes.scraper
+package com.cascadeofinsights.scraper
 
 import java.nio.file.{Path, Paths}
 
@@ -6,8 +6,8 @@ import scalaz.Monoid
 import scalaz.zio.{App, ExitResult, IO, Promise}
 import scalaz._
 import Scalaz.{mzero, _}
-import net.degoes.scraper.test.{Home, Processor, getURL}
-import net.degoes.scraper.url.URL
+import test.{Home, Processor, getURL}
+import url.URL
 import scalaz.zio.console._
 
 object test extends App {
