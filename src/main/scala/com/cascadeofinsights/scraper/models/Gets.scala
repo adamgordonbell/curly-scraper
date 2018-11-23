@@ -1,29 +1,14 @@
-package com.cascadeofinsights.scraper
+package com.cascadeofinsights.scraper.models
 
-import java.io.{File, FileWriter}
+import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Path, Paths}
 
-import net.degoes.scraper.test.SiteIndex
-import net.degoes.scraper.url.URL
-import scalaz.zio._
-import java.nio.charset.StandardCharsets._
-import java.nio.file.{Files, Paths}
+import scalaz.zio.{ExitResult, IO, Promise}
 
-import com.cascadeofinsights.scraper.url.URL
-
-import scala.util.Try
-
-object models {
-
-  def stayInSeedDomainRouter(seed : Set[URL]) : URL => Set[URL] =
-    url => {
-      val rootApexs = seed.map(_.parsed.apexDomain).flatten
-      url.parsed.apexDomain.map(apex => if(rootApexs.contains(apex)) Set(url) else Set(): Set[URL]).getOrElse(Set())
-  }
+object Gets {
 
   def getURLCached(rootPath : Path): URL => IO[Exception, String] =
     (url: URL) => {
-      val default = getURL(url)
       val cached = IO.sync{
         if(Files.exists(Paths.get(rootPath.toAbsolutePath.toString + "/" + url.digest))){
           Some(new String(Files.readAllBytes(Paths.get("file.txt")), UTF_8))
@@ -33,28 +18,9 @@ object models {
       }
       for {
         c <- cached
-        d <- default
+        d <- getURL(url)
       } yield c.getOrElse(d)
     }
-
-  def writeToCacheProcessor(rootPath : Path): (URL, String) => IO[Unit, Unit] =
-    (url, html) => {
-      IO.sync {
-        val writer = Try(new FileWriter(new File(rootPath.toAbsolutePath.toString + "/" + url.digest)))
-        writer.map(w => {w.write(html); w}).recoverWith{case _ => writer}.map(_.close)
-      }
-    }
-
-
-  val IdProcessor: (URL, String) => IO[Unit, List[(URL, String)]] =
-    (url, html) => IO.now(List(url -> html))
-
-  def returnAndCache(rootPath : Path) : (URL, String) => IO[Unit, List[(URL, String)]] =
-    (url, html) =>
-    for {
-      _ <- writeToCacheProcessor(rootPath)(url, html)
-      r <- IdProcessor(url,html)
-    } yield r
 
   private val blockingPool = java.util.concurrent.Executors.newCachedThreadPool()
 
@@ -77,5 +43,4 @@ object models {
       } yield ()).fork
       html    <-  promise.get
     } yield html
- }
-
+}

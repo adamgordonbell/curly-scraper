@@ -1,16 +1,14 @@
-package com.cascadeofinsights.scraper
+package com.cascadeofinsights.scraper.devUtils
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Paths
 
-import scalaz.Monoid
-import scalaz.zio.{App, ExitResult, IO, Promise}
-import scalaz._
-import Scalaz.{mzero, _}
-import test.{Home, Processor, getURL}
-import url.URL
+import com.cascadeofinsights.scraper.models.{Processors, Routers, URL}
+import com.cascadeofinsights.scraper.{Scraper, models}
+import scalaz.Scalaz._
 import scalaz.zio.console._
+import scalaz.zio.{App, IO}
 
-object test extends App {
+object MockedTest extends App {
   val Home = URL("http://scalaz.org").get
   val Index = URL("http://scalaz.org/index.html").get
   val ScaladocIndex = URL("http://scalaz.org/scaladoc/index.html").get
@@ -38,10 +36,10 @@ object test extends App {
   def run(args: List[String]): IO[Nothing, ExitStatus] =
     (for {
       _ <- putStrLn("Starting")
-      rs <- scraper.crawlIOPar(
+      rs <- Scraper.crawlIOPar(
         Set(Home),
-        models.stayInSeedDomainRouter(Set(Home)),
-        Processor,
+        Routers.stayInSeedDomainRouter(Set(Home)),
+        Processors.IdProcessor,
         getURL
         )
       print = rs.value.map(_._1).mkString("\n")
@@ -53,27 +51,3 @@ object test extends App {
     )
 }
 
-
-object test1 extends App {
-
-  val rootFilePath = Paths.get("/Users/abell/temp1")
-  val start = Set(
-    URL("https://scalaz.github.io/7/").get
-  )
-  def run(args: List[String]): IO[Nothing, ExitStatus] =
-    (for {
-      _ <- putStrLn("Starting")
-      rs <- scraper.crawlIOPar(
-        start,
-        models.stayInSeedDomainRouter(start),
-        models.returnAndCache(rootFilePath),
-        models.getURLCached(rootFilePath)
-      )
-      print = rs.value.map(_._1).mkString("\n")
-      _ <- putStrLn(s"results : \n$print")
-    } yield
-      ()).redeemPure(
-      _ => ExitStatus.ExitNow(1),
-      _ => ExitStatus.ExitNow(0)
-    )
-}
