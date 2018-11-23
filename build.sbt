@@ -10,7 +10,6 @@ lazy val functionalScala = (project in file(".")).
                                                |import scalaz._
                                                |import scalaz.zio._
                                                |import scalaz.zio.console._
-                                               |import net.degoes._
                                                |object replRTS extends RTS {}
                                                |import replRTS._
                                                |implicit class RunSyntax[E, A](io: IO[E, A]){ def unsafeRun: A = replRTS.unsafeRun(io) }

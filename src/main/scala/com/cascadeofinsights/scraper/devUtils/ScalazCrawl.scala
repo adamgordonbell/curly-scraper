@@ -2,7 +2,7 @@ package com.cascadeofinsights.scraper.devUtils
 
 import java.nio.file.Paths
 
-import com.cascadeofinsights.scraper.models.{Gets, Processors, Routers, URL}
+import com.cascadeofinsights.scraper.models._
 import com.cascadeofinsights.scraper.Scraper
 import scalaz.Scalaz._
 import scalaz.zio.console._
@@ -15,15 +15,21 @@ object ScalazCrawl extends App {
   val start = Set(
     URL("https://scalaz.github.io/7/").get
   )
+
+  def runner(): Unit = {
+    scraper.unsafeRun()
+  }
+  val scraper: IO[Nothing, Crawl[Unit, List[(URL, String)]]] = Scraper.crawlIOPar(
+    start,
+    Routers.stayInSeedDomainRouter(start),
+    Processors.returnAndCache(rootFilePath),
+    Gets.getURLCached(rootFilePath)
+  )
+
   def run(args: List[String]): IO[Nothing, ExitStatus] =
     (for {
       _ <- putStrLn("Starting")
-      rs <- Scraper.crawlIOPar(
-        start,
-        Routers.stayInSeedDomainRouter(start),
-        Processors.returnAndCache(rootFilePath),
-        Gets.getURLCached(rootFilePath)
-      )
+      rs <- scraper
       print = rs.value.map(_._1).mkString("\n")
       _ <- putStrLn(s"results : \n$print")
     } yield

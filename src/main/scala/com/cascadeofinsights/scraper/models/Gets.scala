@@ -10,8 +10,9 @@ object Gets {
   def getURLCached(rootPath : Path): URL => IO[Exception, String] =
     (url: URL) => {
       val cached = IO.sync{
-        if(Files.exists(Paths.get(rootPath.toAbsolutePath.toString + "/" + url.digest))){
-          Some(new String(Files.readAllBytes(Paths.get("file.txt")), UTF_8))
+        val path = Paths.get(rootPath.toAbsolutePath.toString + "/" + url.digest)
+        if(Files.exists(path)){
+          Some(new String(Files.readAllBytes(path), UTF_8))
         } else {
           None
         }
