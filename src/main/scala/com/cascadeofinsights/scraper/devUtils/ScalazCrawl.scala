@@ -16,8 +16,10 @@ object ScalazCrawl extends App {
     URL("https://scalaz.github.io/7/").get
   )
 
-  def runner(): Unit = {
-    scraper.unsafeRun()
+  import replRTS._
+
+  def firstPage() = {
+    scraper.unsafeRun.value.head._2
   }
   val scraper: IO[Nothing, Crawl[Unit, List[(URL, String)]]] = Scraper.crawlIOPar(
     start,
