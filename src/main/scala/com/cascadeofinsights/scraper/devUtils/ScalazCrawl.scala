@@ -18,9 +18,6 @@ object ScalazCrawl extends App {
 
   import replRTS._
 
-  def firstPage() = {
-    scraper.unsafeRun.value.head._2
-  }
   val scraper: IO[Nothing, Crawl[Unit, List[(URL, String)]]] = Scraper.crawlIOPar(
     start,
     Routers.stayInSeedDomainRouter(start),
@@ -39,4 +36,10 @@ object ScalazCrawl extends App {
       _ => ExitStatus.ExitNow(1),
       _ => ExitStatus.ExitNow(0)
     )
+
+
+  val results: Crawl[Unit, List[(URL, String)]] = scraper.unsafeRun
+  val firstPage: String = scraper.unsafeRun.value.head._2
+   val urls: List[URL] = URL.extractURLs(URL("https://scalaz.github.io/7/").get,ScalazCrawl.firstPage)
+  val urlsCleaned: List[URL] = urls.flatMap(u => Routers.stayInSeedDomainRouter(Set(start.head))(u))
 }

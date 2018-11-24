@@ -14,7 +14,8 @@ object Scraper {
     processor: (URL, String) => IO[E, A],
     getURL: URL => IO[Exception, String] = Gets.getURL(_)
   ): IO[Nothing, Crawl[E, A]] = {
-    def loop(seeds: Set[URL], ref: Ref[(Crawl[E, A], Set[URL])]): IO[Nothing, Unit] =
+    def loop(seeds: Set[URL], ref: Ref[(Crawl[E, A], Set[URL])]): IO[Nothing, Unit] = {
+      println(s"\tLoop with seeds : $seeds")
       IO.parTraverse(seeds)(url =>
         getURL(url).redeem(
           _ => IO.unit,
@@ -30,7 +31,7 @@ object Scraper {
               )
             }
         )).void: IO[Nothing, Unit]
-
+    }
     for {
       ref <- Ref(mzero[Crawl[E, A]] -> seeds)
       _ <- loop(seeds, ref)

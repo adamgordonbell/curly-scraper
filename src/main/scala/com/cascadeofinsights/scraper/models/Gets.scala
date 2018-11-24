@@ -10,8 +10,10 @@ object Gets {
   def getURLCached(rootPath : Path): URL => IO[Exception, String] =
     (url: URL) => {
       val cached = IO.sync{
+        println(s"getting :($rootPath, $url)")
         val path = Paths.get(rootPath.toAbsolutePath.toString + "/" + url.digest)
         if(Files.exists(path)){
+          println(s"found cached :($rootPath, $url)")
           Some(new String(Files.readAllBytes(path), UTF_8))
         } else {
           None
@@ -25,23 +27,25 @@ object Gets {
 
   private val blockingPool = java.util.concurrent.Executors.newCachedThreadPool()
 
-  def getURL(url: URL): IO[Exception, String] =
+  def getURL(url: URL): IO[Exception, String] = {
+    println(s"getURL : $url")
     for {
       //eventually this would be IO.blocking
-      promise <-  Promise.make[Exception, String]
-      _       <-  (for {
+      promise <- Promise.make[Exception, String]
+      _ <- (for {
         exitResult <- IO.async[Nothing, ExitResult[Exception, String]](k => blockingPool.submit(
-          new Runnable () {
+          new Runnable() {
             def run: Unit =
               try {
                 k(ExitResult.Completed(ExitResult.Completed(scala.io.Source.fromURL(url.url)(scala.io.Codec.UTF8).mkString)))
               } catch {
-                case e : Exception => k(ExitResult.Completed(ExitResult.Failed(e)))
+                case e: Exception => k(ExitResult.Completed(ExitResult.Failed(e)))
               }
           }
-        )) : IO[Nothing, ExitResult[Exception, String]]
-        _          <- promise.done(exitResult)
+        )): IO[Nothing, ExitResult[Exception, String]]
+        _ <- promise.done(exitResult)
       } yield ()).fork
-      html    <-  promise.get
+      html <- promise.get
     } yield html
+  }
 }

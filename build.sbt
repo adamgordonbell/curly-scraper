@@ -7,12 +7,7 @@ lazy val functionalScala = (project in file(".")).
     version       := "0.1-SNAPSHOT",
     scalaVersion  := "2.12.6",
     initialCommands in Compile in console := """
-                                               |import scalaz._
-                                               |import scalaz.zio._
-                                               |import scalaz.zio.console._
-                                               |object replRTS extends RTS {}
-                                               |import replRTS._
-                                               |implicit class RunSyntax[E, A](io: IO[E, A]){ def unsafeRun: A = replRTS.unsafeRun(io) }
+                                               |import scalaz._, scalaz.zio._, scalaz.zio.console._,com.cascadeofinsights.scraper.devUtils._
     """.stripMargin
   )
 
@@ -53,11 +48,7 @@ libraryDependencies ++= Seq(
   "org.scalaz"      %% "scalaz-zio-interop" % ZIOVersion,
   // URL parsing
   "io.lemonlabs"    %% "scala-uri"          % "1.3.1",
-  // Ammonite
-  "com.lihaoyi"     %  "ammonite"           % "1.1.2"   % "test" cross CrossVersion.full,
 
-  //bloom filter
-  "com.github.alexandrnikitin" %% "bloom-filter" % "latest.release",
   "commons-codec" % "commons-codec" % "1.9"
 )
 
@@ -76,9 +67,27 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots")
 )
 
-// Ammonite REPL
+libraryDependencies += {
+  val version = scalaBinaryVersion.value match {
+    case "2.10" => "1.0.3"
+    case _ ⇒ "1.4.4"
+  }
+  "com.lihaoyi" % "ammonite" % version % "test" cross CrossVersion.full
+}
+
 sourceGenerators in Test += Def.task {
   val file = (sourceManaged in Test).value / "amm.scala"
   IO.write(file, """object amm extends App { ammonite.Main().run() }""")
   Seq(file)
 }.taskValue
+
+// Optional, required for the `source` command to work
+(fullClasspath in Test) ++= {
+  (updateClassifiers in Test).value
+    .configurations
+    .find(_.configuration == Test.name)
+    .get
+    .modules
+    .flatMap(_.artifacts)
+    .collect{case (a, f) if a.classifier == Some("sources") => f}
+}
