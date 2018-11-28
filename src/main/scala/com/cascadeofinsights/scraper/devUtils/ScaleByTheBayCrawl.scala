@@ -18,21 +18,28 @@ object ScaleByTheBayCrawl extends App {
 
   import replRTS._
 
-  val scraper: IO[Nothing, Crawl[Unit, List[(URL, String)]]] = Scraper.crawlIOPar(
+  val scraper: IO[Nothing, Crawl[Unit, List[(URL, List[TwitterName])]]] = Scraper.crawlIOPar(
     start,
     Routers.compose(
       Routers.stayInSeedDomainRouter(start),
       Routers.dropAnchorsAndQueryParams,
     ),
-    Processors.returnAndCache(rootFilePath),
+    Processors.cachedTwitter(rootFilePath),
     Gets.getURLCached(rootFilePath)
   )
+
+  def correlate(values : List[(URL,List[TwitterName])]) : List[TwitterName] =
+    values.map(_._2).flatten.distinct
+
+  def correlate2(values : List[(URL,List[TwitterName])]) : Map[TwitterName,URL] = {
+   values.map(tuple => tuple._2.map(twitter => (twitter, tuple._1))).flatten.toMap
+  }
 
   def run(args: List[String]): IO[Nothing, ExitStatus] =
     (for {
       _ <- putStrLn("Starting")
       rs <- scraper
-      print = rs.value.map(_._1).mkString("\n")
+      print = correlate2(rs.value).mkString("\n")
       _ <- putStrLn(s"results : \n$print")
     } yield
       ()).redeemPure(
@@ -41,8 +48,8 @@ object ScaleByTheBayCrawl extends App {
     )
 
 
-  val results: Crawl[Unit, List[(URL, String)]] = scraper.unsafeRun
-  val firstPage: String = scraper.unsafeRun.value.head._2
-  val urls: List[URL] = URL.extractURLs(URL("https://scalaz.github.io/7/").get,ScalazCrawl.firstPage)
-  val urlsCleaned: List[URL] = urls.flatMap(u => Routers.stayInSeedDomainRouter(Set(start.head))(u))
+//  val results: Crawl[Unit, List[(URL, String)]] = scraper.unsafeRun
+//  val firstPage: String = scraper.unsafeRun.value.head._2
+//  val urls: List[URL] = URL.extractURLs(URL("https://scalaz.github.io/7/").get,ScalazCrawl.firstPage)
+//  val urlsCleaned: List[URL] = urls.flatMap(u => Routers.stayInSeedDomainRouter(Set(start.head))(u))
 }

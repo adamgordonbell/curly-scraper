@@ -39,7 +39,7 @@ object MockedTest extends App {
       rs <- Scraper.crawlIOPar(
         Set(Home),
         Routers.stayInSeedDomainRouter(Set(Home)),
-        Processors.IdProcessor,
+        Processors.Id,
         getURL
         )
       print = rs.value.map(_._1).mkString("\n")

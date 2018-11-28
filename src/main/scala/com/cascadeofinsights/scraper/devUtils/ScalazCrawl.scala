@@ -21,7 +21,7 @@ object ScalazCrawl extends App {
   val scraper: IO[Nothing, Crawl[Unit, List[(URL, String)]]] = Scraper.crawlIOPar(
     start,
     Routers.compose(
-//      Routers.debug("router Input\t\t\t"),
+//      Routers.debug("ruter Input\t\t\t"),
       Routers.stayInSeedDomainRouter(start),
 //      Routers.debug("seed output\t\t\t"),
       Routers.dropAnchorsAndQueryParams,
@@ -35,7 +35,7 @@ object ScalazCrawl extends App {
     (for {
       _ <- putStrLn("Starting")
       rs <- scraper
-      print = rs.value.map(_._1).mkString("\n")
+      print = rs.value.mkString("\n")
       _ <- putStrLn(s"results : \n$print")
     } yield
       ()).redeemPure(
