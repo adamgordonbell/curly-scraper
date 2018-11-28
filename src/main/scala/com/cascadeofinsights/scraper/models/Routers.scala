@@ -6,8 +6,8 @@ object Routers {
 
   def stayInSeedDomainRouter(seed : Set[URL]) : Route=
     url => {
-      val rootApexs = seed.map(_.parsed.apexDomain).flatten
-      url.parsed.apexDomain.map(apex => if(rootApexs.contains(apex)) Set(url) else Set(): Set[URL]).getOrElse(Set())
+      val rootHosts = seed.map(_.parsed.hostOption).flatten
+      url.parsed.hostOption.map(host => if(rootHosts.contains(host)) Set(url) else Set(): Set[URL]).getOrElse(Set())
     }
 
   val dropAnchorsAndQueryParams : Route =

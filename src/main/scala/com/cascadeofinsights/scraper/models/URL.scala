@@ -10,16 +10,20 @@ import scala.util.Try
 
   import io.lemonlabs.uri._
 
-  val pattern = "^(http\\:\\/\\/|https\\:\\/\\/)".r
-  final val protocol: String =pattern.findFirstIn(parsed.toString()).getOrElse("http://")
-  final val root: Url = AbsoluteUrl.parse(protocol + parsed.apexDomain.get + "/")
+
+  final val protocol: String = parsed.schemeOption.getOrElse("http")
+
+  final val root: Url = AbsoluteUrl.parse(protocol + "://" + parsed.hostOption.get + "/")
 
   final def relative(page: String): Option[URL] = {
+
     if (page.contains("://")) {
       None
     } else {
       scala.util.Try{
-        AbsoluteUrl.parse(root.toString() + page.dropWhile(_ == '/'))
+        RelativeUrl.parse(page)
+          .withHost(parsed.hostOption.get)
+          .withScheme(parsed.schemeOption.get)
       }.toOption.map(new URL(_))
     }
   }
