@@ -7,7 +7,7 @@ lazy val functionalScala = (project in file(".")).
     version       := "0.1-SNAPSHOT",
     scalaVersion  := "2.12.6",
     initialCommands in Compile in console := """
-                                               |import scalaz._, scalaz.zio._, scalaz.zio.console._,com.cascadeofinsights.scraper.devUtils._
+                                               |import scalaz._, scalaz.zio._, scalaz.zio.console._,com.cascadeofinsights.scraper.devUtils._, com.cascadeofinsights.scraper.models._
     """.stripMargin
   )
 
@@ -49,9 +49,15 @@ libraryDependencies ++= Seq(
   // URL parsing
   "io.lemonlabs"    %% "scala-uri"          % "1.3.1",
 
-  "commons-codec" % "commons-codec" % "1.9"
+  "commons-codec" % "commons-codec" % "1.9",
+
+  //tests
+  "com.lihaoyi" %% "utest" % "0.6.5" % "test"
+
+
 )
 
+testFrameworks += new TestFramework("utest.runner.Framework")
 
 val circeVersion = "0.10.0"
 
@@ -67,27 +73,3 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots")
 )
 
-libraryDependencies += {
-  val version = scalaBinaryVersion.value match {
-    case "2.10" => "1.0.3"
-    case _ ⇒ "1.4.4"
-  }
-  "com.lihaoyi" % "ammonite" % version % "test" cross CrossVersion.full
-}
-
-sourceGenerators in Test += Def.task {
-  val file = (sourceManaged in Test).value / "amm.scala"
-  IO.write(file, """object amm extends App { ammonite.Main().run() }""")
-  Seq(file)
-}.taskValue
-
-// Optional, required for the `source` command to work
-(fullClasspath in Test) ++= {
-  (updateClassifiers in Test).value
-    .configurations
-    .find(_.configuration == Test.name)
-    .get
-    .modules
-    .flatMap(_.artifacts)
-    .collect{case (a, f) if a.classifier == Some("sources") => f}
-}

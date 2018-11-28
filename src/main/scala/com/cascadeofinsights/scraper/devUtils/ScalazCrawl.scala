@@ -20,7 +20,13 @@ object ScalazCrawl extends App {
 
   val scraper: IO[Nothing, Crawl[Unit, List[(URL, String)]]] = Scraper.crawlIOPar(
     start,
-    Routers.stayInSeedDomainRouter(start),
+    Routers.compose(
+//      Routers.debug("router Input\t\t\t"),
+      Routers.stayInSeedDomainRouter(start),
+//      Routers.debug("seed output\t\t\t"),
+      Routers.dropAnchorsAndQueryParams,
+//      Routers.debug("drop output\t\t\t"),
+    ),
     Processors.returnAndCache(rootFilePath),
     Gets.getURLCached(rootFilePath)
   )
@@ -40,6 +46,6 @@ object ScalazCrawl extends App {
 
   val results: Crawl[Unit, List[(URL, String)]] = scraper.unsafeRun
   val firstPage: String = scraper.unsafeRun.value.head._2
-   val urls: List[URL] = URL.extractURLs(URL("https://scalaz.github.io/7/").get,ScalazCrawl.firstPage)
+  val urls: List[URL] = URL.extractURLs(URL("https://scalaz.github.io/7/").get,ScalazCrawl.firstPage)
   val urlsCleaned: List[URL] = urls.flatMap(u => Routers.stayInSeedDomainRouter(Set(start.head))(u))
 }
