@@ -116,5 +116,6 @@ final case class TwitterName private (name : String) {
      "who_to_follow",
      "widgets",
      "zendesk_auth",
-     "media_signup").map(t => (t,t)).toMap
+     "media_signup",
+      "intent").map(t => (t,t)).toMap
  }

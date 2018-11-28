@@ -31,8 +31,10 @@ object ScaleByTheBayCrawl extends App {
   def correlate(values : List[(URL,List[TwitterName])]) : List[TwitterName] =
     values.map(_._2).flatten.distinct
 
-  def correlate2(values : List[(URL,List[TwitterName])]) : Map[TwitterName,URL] = {
-   values.map(tuple => tuple._2.map(twitter => (twitter, tuple._1))).flatten.toMap
+  def correlate2(values : List[(URL,List[TwitterName])]) : Map[TwitterName,Set[URL]] = {
+    val r = values.map(tuple => tuple._2.map(twitter => (twitter, tuple._1))).flatten
+    val r2 = r.groupBy(_._1).map(t => (t._1,t._2.map(_._2))).mapValues(_.toSet)
+    r2
   }
 
   def run(args: List[String]): IO[Nothing, ExitStatus] =
