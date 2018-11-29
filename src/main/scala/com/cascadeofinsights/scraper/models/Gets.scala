@@ -3,7 +3,10 @@ package com.cascadeofinsights.scraper.models
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Path, Paths}
 
+import scalaz.Monad
 import scalaz.zio.{ExitResult, IO, Promise}
+import scalaz._, Scalaz._
+import scalaz.zio.interop.scalaz72._
 
 object Gets {
 
@@ -17,11 +20,14 @@ object Gets {
           None
         }
       }
-      cached.flatMap(c => if(c.isDefined) IO.now(c.get) else getURL(url))
+      getOrElseEffect(cached,getURL(url))
     }.redeemPure[Nothing,String](
       err = (_ => ""), //cache any get errors as an empty string
       succ = identity
     )
+
+  def getOrElseEffect[M[_]: Monad, A](a: M[Option[A]], b: => M[A]): M[A] =
+    Monad[M].bind(a)(_.fold(b)(Monad[M].pure(_)))
 
   private val blockingPool = java.util.concurrent.Executors.newCachedThreadPool()
 
