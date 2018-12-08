@@ -1,5 +1,6 @@
 package com.cascadeofinsights.scraper.models
 
+import com.cascadeofinsights.util.SHA256Hash
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils
 

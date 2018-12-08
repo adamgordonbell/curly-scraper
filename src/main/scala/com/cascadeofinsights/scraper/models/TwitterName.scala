@@ -1,13 +1,13 @@
 package com.cascadeofinsights.scraper.models
 
+import com.cascadeofinsights.util.SHA256Hash
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils
 
 import scala.util.Try
 
 final case class TwitterName private (name : String) {
-
-
+ val digest : SHA256Hash = SHA256Hash.create(name.toString())
 
  override def equals(a: Any): Boolean = a match {
   case that : TwitterName => this.name == that.name

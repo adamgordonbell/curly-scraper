@@ -1,4 +1,4 @@
-package com.cascadeofinsights.scraper.models
+package com.cascadeofinsights.util
 
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils

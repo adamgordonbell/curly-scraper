@@ -5,26 +5,23 @@ import java.nio.file.{Files, Path, Paths}
 
 import scalaz.Monad
 import scalaz.zio.{ExitResult, IO, Promise}
-import scalaz._, Scalaz._
+import scalaz._
+import Scalaz._
+import com.cascadeofinsights.util.Cache
 import scalaz.zio.interop.scalaz72._
 
 object Gets {
 
   def getURLCached(rootPath : Path): URL => IO[Exception, String] =
     (url: URL) => {
-      val cached = IO.sync{
-        val path = Paths.get(rootPath.toAbsolutePath.toString + "/" + url.digest)
-        if(Files.exists(path)){
-          Some(new String(Files.readAllBytes(path), UTF_8))
-        } else {
-          None
-        }
-      }
+      val cached = Cache.getFromDisk(rootPath)(url.digest)
       getOrElseEffect(cached,getURL(url))
     }.redeemPure[Nothing,String](
       err = (_ => ""), //cache any get errors as an empty string
       succ = identity
     )
+
+
 
   def getOrElseEffect[M[_]: Monad, A](a: M[Option[A]], b: => M[A]): M[A] =
     Monad[M].bind(a)(_.fold(b)(Monad[M].pure(_)))
