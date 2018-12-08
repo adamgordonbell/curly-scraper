@@ -11,7 +11,7 @@ import scalaz.zio.{App, IO}
 
 object ScalazCrawl extends App {
 
-  val rootFilePath = Paths.get("/Users/abell/temp1")
+  val rootFilePath = Paths.get("/Users/adam/data")
   val start = Set(
     URL("https://scalaz.github.io/7/").get
   )
@@ -21,11 +21,8 @@ object ScalazCrawl extends App {
   val scraper: IO[Nothing, Crawl[Unit, List[(URL, String)]]] = Scraper.crawlIOPar(
     start,
     Routers.compose(
-//      Routers.debug("ruter Input\t\t\t"),
       Routers.stayInSeedDomainRouter(start),
-//      Routers.debug("seed output\t\t\t"),
       Routers.dropAnchorsAndQueryParams,
-//      Routers.debug("drop output\t\t\t"),
     ),
     Processors.returnAndCache(rootFilePath),
     Gets.getURLCached(rootFilePath)

@@ -52,9 +52,11 @@ libraryDependencies ++= Seq(
   "commons-codec" % "commons-codec" % "1.9",
 
   //tests
-  "com.lihaoyi" %% "utest" % "0.6.5" % "test"
+  "com.lihaoyi" %% "utest" % "0.6.5" % "test",
 
 
+  //twitter
+  "com.danielasfregola" %% "twitter4s" % "5.5"
 )
 
 testFrameworks += new TestFramework("utest.runner.Framework")

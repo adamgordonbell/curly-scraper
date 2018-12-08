@@ -6,7 +6,7 @@ import org.apache.commons.codec.digest.DigestUtils
 import scala.util.Try
 
 
- final case class URL private (parsed: io.lemonlabs.uri.Url) {
+final case class URL private (parsed: io.lemonlabs.uri.Url) {
 
   import io.lemonlabs.uri._
 
@@ -33,32 +33,32 @@ import scala.util.Try
   val digest : SHA256Hash = SHA256Hash.create(parsed.toString())
 
   override def equals(a: Any): Boolean = a match {
-   case that : URL => this.url == that.url
-   case _ => false
+    case that : URL => this.url == that.url
+    case _ => false
   }
 
   override def hashCode: Int = url.hashCode
- }
+}
 
- object URL {
+object URL {
   import io.lemonlabs.uri._
 
   def apply(url: String): Option[URL] =
-   scala.util.Try(AbsoluteUrl.parse(url)).toOption match {
-    case None => None
-    case Some(parsed) => Some(new URL(parsed))
-   }
+    scala.util.Try(AbsoluteUrl.parse(url)).toOption match {
+      case None => None
+      case Some(parsed) => Some(new URL(parsed))
+    }
 
   def extractURLs(root: URL, html: String): List[URL] = {
-   val pattern = "href=[\"\']([^\"\']+)[\"\']".r
+    val pattern = "href=[\"\']([^\"\']+)[\"\']".r
 
-   scala.util.Try({
-    val matches = (for (m <- pattern.findAllMatchIn(html)) yield m.group(1)).toList
+    scala.util.Try({
+      val matches = (for (m <- pattern.findAllMatchIn(html)) yield m.group(1)).toList
 
-    for {
-     m   <- matches
-     url <- URL(m).toList ++ root.relative(m).toList
-    } yield url
-   }).getOrElse(Nil)
+      for {
+        m   <- matches
+        url <- URL(m).toList ++ root.relative(m).toList
+      } yield url
+    }).getOrElse(Nil)
   }
- }
+}

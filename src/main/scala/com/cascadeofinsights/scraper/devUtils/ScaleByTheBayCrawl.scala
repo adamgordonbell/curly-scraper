@@ -4,13 +4,14 @@ import java.nio.file.Paths
 
 import com.cascadeofinsights.scraper.Scraper
 import com.cascadeofinsights.scraper.models._
+import com.cascadeofinsights.twitter.UserLookup
 import scalaz.Scalaz._
 import scalaz.zio.console._
 import scalaz.zio.{App, IO}
 
 object ScaleByTheBayCrawl extends App {
 
-  val rootFilePath = Paths.get("/Users/abell/temp1")
+  val rootFilePath = Paths.get("/Users/adam/data")
   val start = Set(
     URL("https://scalebythebay2018.sched.com/").get,
     URL("http://scale.bythebay.io/").get
@@ -28,10 +29,7 @@ object ScaleByTheBayCrawl extends App {
     Gets.getURLCached(rootFilePath)
   )
 
-  def correlate(values : List[(URL,List[TwitterName])]) : List[TwitterName] =
-    values.map(_._2).flatten.distinct
-
-  def correlate2(values : List[(URL,List[TwitterName])]) : Map[TwitterName,Set[URL]] = {
+  def correlate[Key, Value](values : List[(Value,List[Key])]) : Map[Key,Set[Value]] = {
     val r = values.map(tuple => tuple._2.map(twitter => (twitter, tuple._1))).flatten
     val r2 = r.groupBy(_._1).map(t => (t._1,t._2.map(_._2))).mapValues(_.toSet)
     r2
@@ -41,8 +39,10 @@ object ScaleByTheBayCrawl extends App {
     (for {
       _ <- putStrLn("Starting")
       rs <- scraper
-      print = correlate2(rs.value).mkString("\n")
-      _ <- putStrLn(s"results : \n$print")
+      map = correlate(rs.value)
+      _ <- putStrLn(s"results : \n" + map.mkString("\n"))
+      users <- UserLookup.lookupProfile(map.keys.toList)
+      _ <- putStrLn(s"users : \n" + users.mkString("\n"))
     } yield
       ()).redeemPure(
       _ => ExitStatus.ExitNow(1),
