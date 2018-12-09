@@ -11,7 +11,8 @@ import scalaz.zio.{App, IO}
 
 object ScaleByTheBayCrawl extends App {
 
-  val rootFilePath = Paths.get("/Users/adam/data")
+  val scraperFilePath = Paths.get("/Users/adam/data/scraper")
+  val twitterFilePath = Paths.get("/Users/adam/data/twitterUser")
   val start = Set(
     URL("https://scalebythebay2018.sched.com/").get,
     URL("http://scale.bythebay.io/").get
@@ -25,8 +26,8 @@ object ScaleByTheBayCrawl extends App {
       Routers.stayInSeedDomainRouter(start),
       Routers.dropAnchorsAndQueryParams,
     ),
-    Processors.cachedTwitter(rootFilePath),
-    Gets.getURLCached(rootFilePath)
+    Processors.cachedTwitter(scraperFilePath),
+    Gets.getURLCached(scraperFilePath)
   )
 
   def correlate[Key, Value](values : List[(Value,List[Key])]) : Map[Key,Set[Value]] = {
@@ -41,7 +42,7 @@ object ScaleByTheBayCrawl extends App {
       rs <- scraper
       map = correlate(rs.value)
       _ <- putStrLn(s"results : \n" + map.mkString("\n"))
-      users <- UserLookup.lookupProfile(map.keys.toList)
+      users <- UserLookup.lookupProfileCached(twitterFilePath)(map.keys.toList)
       _ <- putStrLn(s"users : \n" + users.mkString("\n"))
     } yield
       ()).redeemPure(
