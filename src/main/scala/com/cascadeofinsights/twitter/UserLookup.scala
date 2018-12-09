@@ -2,10 +2,10 @@ package com.cascadeofinsights.twitter
 
 import java.nio.file.Path
 
-import com.cascadeofinsights.scraper.models.TwitterName
+import com.cascadeofinsights.scraper.models.{TwitterName, User}
 import com.cascadeofinsights.util.Cache
 import com.danielasfregola.twitter4s.TwitterRestClient
-import com.danielasfregola.twitter4s.entities.{RatedData, User}
+import com.danielasfregola.twitter4s.entities.{RatedData, User => TwitterUser}
 import org.json4s.{NoTypeHints, native}
 import scalaz.Scalaz._
 import scalaz.zio.interop.scalaz72._
@@ -23,20 +23,20 @@ object UserLookup {
 
   val restClient = TwitterRestClient()
 
-  def lookupProfile(users: List[TwitterName]): IO[Nothing, Seq[(String, Int)]] = {
+  def lookupProfile(users: List[TwitterName]): IO[Nothing, Seq[User]] = {
     IO.traverse(users.grouped(100).toList)(lookup100Max).map(_.flatten)
   }
 
-  def lookupProfileCached(rootPath : Path)(users: List[TwitterName]): IO[Nothing, Seq[(String, Int)]] = {
+  def lookupProfileCached(rootPath : Path)(users: List[TwitterName]): IO[Nothing, Seq[User]] = {
     IO.traverse(users.grouped(100).toList)(list => lookup100RawCached(rootPath)(list))
       .map(_.flatten)
-      .map(_.map(t => (t.name,t.followers_count)))
+      .map(_.map(convert))
   }
 
-  private def lookup100Max(users: List[TwitterName]): IO[Nothing, Seq[(String, Int)]] = {
-    lookup100MaxRaw(users).map(_.map(t => (t.name, t.followers_count)))
+  private def lookup100Max(users: List[TwitterName]): IO[Nothing, Seq[User]] = {
+    lookup100MaxRaw(users).map(_.map(convert))
   }
-  private def lookup100RawCached(rootPath : Path)(users: List[TwitterName]):IO[Nothing, Seq[User]] = {
+  private def lookup100RawCached(rootPath : Path)(users: List[TwitterName]):IO[Nothing, Seq[TwitterUser]] = {
     for{
       cached <- users.filterM(t => Cache.isOnDisk(rootPath)(t.digest))
       _ <- putStrLn(s"cached : $cached").attempt.void
@@ -49,21 +49,21 @@ object UserLookup {
     } yield (nonCachedResults ++ cachedResults)
   }
 
-  def cache(rootPath : Path)(user : User) : IO[Nothing,Unit] = {
+  def cache(rootPath : Path)(user : TwitterUser) : IO[Nothing,Unit] = {
     for {
       _ <- putStrLn(s"caching : ${user.screen_name.toLowerCase}").attempt.void
      _  <- Cache.writeToDisk(rootPath)(TwitterName(user.screen_name.toLowerCase).get.digest,fromUser(user))
     } yield ()
   }
 
-  private def lookup100MaxRaw(users: List[TwitterName]): IO[Nothing, Seq[User]] = {
+  private def lookup100MaxRaw(users: List[TwitterName]): IO[Nothing, Seq[TwitterUser]] = {
     if(users == List.empty) {
      IO.sync(Seq.empty)
     } else {
       val users1 = users.take(100).map(_.name)
-      val f: Future[RatedData[Seq[User]]] = restClient.users(users1)
-      val io: IO[Throwable, RatedData[Seq[User]]] = IO.fromFuture { () => f }(ExecutionContext.global)
-      val fr: IO[Throwable, Seq[User]] = io.map(_.data)
+      val f: Future[RatedData[Seq[TwitterUser]]] = restClient.users(users1)
+      val io: IO[Throwable, RatedData[Seq[TwitterUser]]] = IO.fromFuture { () => f }(ExecutionContext.global)
+      val fr: IO[Throwable, Seq[TwitterUser]] = io.map(_.data)
       fr.delay(1.seconds).attempt.map {
         case Left(a) => Seq.empty
         case Right(b) => b
@@ -71,8 +71,9 @@ object UserLookup {
     }
   }
 
+  def convert(u : TwitterUser) : User = User.from(u)
   implicit val formats = native.Serialization.formats(NoTypeHints)
 
-  def toUser(s : String) : Option[User] = Try(native.Serialization.read[User](s)).toOption
-  def fromUser(u : User) : String = native.Serialization.write(u)
+  def toUser(s : String) : Option[TwitterUser] = Try(native.Serialization.read[TwitterUser](s)).toOption
+  def fromUser(u : TwitterUser) : String = native.Serialization.write(u)
 }

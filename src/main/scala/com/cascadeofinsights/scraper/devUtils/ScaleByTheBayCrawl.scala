@@ -41,9 +41,9 @@ object ScaleByTheBayCrawl extends App {
       _ <- putStrLn("Starting")
       rs <- scraper
       map = correlate(rs.value)
-      _ <- putStrLn(s"results : \n" + map.mkString("\n"))
       users <- UserLookup.lookupProfileCached(twitterFilePath)(map.keys.toList)
-      _ <- putStrLn(s"users : \n" + users.mkString("\n"))
+      updatedUsers <- IO.sync(User.update(users,map))
+      _ <- putStrLn(s"users : \n" + updatedUsers.mkString("\n"))
     } yield
       ()).redeemPure(
       _ => ExitStatus.ExitNow(1),
